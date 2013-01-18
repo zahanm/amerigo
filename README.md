@@ -7,7 +7,7 @@ This baby uses rsync to keep a remote and local directory in sync.
 Config file syntax
 ---
 
-journey.json
+`journey.json`
 
     {
       remote: {},
