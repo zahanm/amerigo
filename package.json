@@ -1,0 +1,21 @@
+{
+  "name": "amerigo",
+  "version": "0.0.1",
+  "description": "rsync wrapper to keep remote and local directories in sync.",
+  "main": "vespucci.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/zahanm/amerigo.git"
+  },
+  "keywords": [
+    "rsync",
+    "scp"
+  ],
+  "author": "Zahan Malkani <z@zahanm.com>",
+  "license": "MIT",
+  "readmeFilename": "README.md",
+  "gitHead": "ab8539487f717a9ad890687a2f2ff9eab71af230"
+}
