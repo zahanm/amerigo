@@ -2,7 +2,8 @@
 What is does
 ---
 
-This baby is a convenient rsync wrapper to keep a remote and local directory in sync.
+Don't want to develop remotely?
+This baby is a convenient rsync wrapper to keep remote and local directories in sync.
 
 actions - up | down
 check remote branch match
