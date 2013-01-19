@@ -1,13 +1,13 @@
 
 'use strict';
 
-var fs = require('fs');
-var spawn = require('child_process').spawn;
+var fs = require('fs')
+  , path = require('path')
+  , async = require('async')
+  , mkdirpSync = require('mkdirp').sync
+  , spawn = require('child_process').spawn;
 
-"This directory ain't ready to go on a journey just yet."
-"Missing 'journey.json'"
-
-var COMMAND = 'rsync';
+var RSYNC = 'rsync';
 var CONFIG_FILE = 'journey.json';
 var SSH = 'ssh';
 var GITB = 'git branch'
@@ -40,11 +40,37 @@ function branchCheck(config, cb) {
 
 function voyage(config) {
   var downloading = ARGV._[0] == 'down';
-  "rsync --verbose --rsh=ssh --compress --recursive --dry-run"
-  var args = [ '--rsh=ssh', '--compress', '--recursive' ];
-  if (ARGV.verbose) args.push('--verbose');
-  if (ARGV['dry-run']) args.push('--dry-run');
-  console.log("success");
+  async.forEachLimit(config.expeditions, 2, function(expedition, next) {
+    var args = [ '--rsh=ssh', '--compress', '--recursive' ];
+    if (ARGV.verbose) args.push('--verbose');
+    if (ARGV['dry-run']) args.push('--dry-run');
+    var remotepath = path.join(config.root, expedition.remote);
+    if (/\/$/.exec(remotepath) == null)
+      remotepath += '/';
+    var localpath = expedition.local;
+    if (/\/$/.exec(remotepath))
+      localpath = localpath.slice(0, localpath.length - 1);
+    if (!fs.existsSync(localpath)) {
+      console.log('mkdir -p ' + localpath);
+      mkdirpSync(localpath);
+    }
+    if (downloading) {
+      args.push(config.host + ':' + remotepath);
+      args.push(localpath)
+    } else {
+      args.push(localpath)
+      args.push(config.host + ':' + remotepath);
+    }
+    console.log('exec: ' + RSYNC + ' ' + args.join(' '));
+    return;
+    var rsync = spawn(RSYNC, args);
+    rsync.on('exit', function(err) {
+      
+    });
+  }, function(err) {
+    if (err) abortJourney("rsync error: " + err);
+    console.log('All done');
+  });
 }
 
 function prepareVessel() {
