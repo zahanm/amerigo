@@ -20,10 +20,10 @@ function branchCheck(config, cb) {
   ssh.stdout.on('data', function onOut(data) {
     output += String(data);
   });
-  ssh.stderr.on('data', function onOut(data) {
+  ssh.stderr.on('data', function onErr(data) {
     output += String(data);
   });
-  ssh.on('exit', function(code) {
+  ssh.on('exit', function onExit(code) {
     if (code !== 0) abortJourney("Try ssh'ing into " + config.host);
     var remotebranch = output.split('\n').filter(function(line) {
       return !!/^\*/.exec(line);
@@ -40,36 +40,48 @@ function branchCheck(config, cb) {
 
 function voyage(config) {
   var downloading = ARGV._[0] == 'down';
-  async.forEachLimit(config.expeditions, 2, function(expedition, next) {
+  async.forEachLimit(config.expeditions, 2, function iter(expedition, next) {
     var args = [ '--rsh=ssh', '--compress', '--recursive' ];
     if (ARGV.verbose) args.push('--verbose');
     if (ARGV['dry-run']) args.push('--dry-run');
     var remotepath = path.join(config.root, expedition.remote);
-    if (/\/$/.exec(remotepath) == null)
-      remotepath += '/';
     var localpath = expedition.local;
-    if (/\/$/.exec(remotepath))
-      localpath = localpath.slice(0, localpath.length - 1);
     if (!fs.existsSync(localpath)) {
       console.log('mkdir -p ' + localpath);
       mkdirpSync(localpath);
     }
+    var from = null
+      , to = null;
     if (downloading) {
-      args.push(config.host + ':' + remotepath);
-      args.push(localpath)
+      from = config.host + ':' + remotepath;
+      to = localpath;
     } else {
-      args.push(localpath)
-      args.push(config.host + ':' + remotepath);
+      from = localpath;
+      to = config.host + ':' + remotepath;
     }
-    console.log('exec: ' + RSYNC + ' ' + args.join(' '));
-    return;
+    if (/\/$/.exec(from) == null) from += '/';
+    if (/\/$/.exec(to)) to = to.slice(0, to.length - 1);
+    args.push(from);
+    args.push(to);
+    console.log(RSYNC + ' ' + args.join(' '));
     var rsync = spawn(RSYNC, args);
-    rsync.on('exit', function(err) {
-      
+    var buf = '';
+    rsync.stdout.on('data', function onOut(data) {
+      buf += String(data);
     });
-  }, function(err) {
-    if (err) abortJourney("rsync error: " + err);
-    console.log('All done');
+    rsync.stderr.on('data', function onErr(data) {
+      buf += String(data);
+    })
+    rsync.on('exit', function onExit(code) {
+      if (code !== 0) next('rsync errored out');
+      else {
+        if (ARGV.verbose) console.log(buf);
+        next(null);
+      }
+    });
+  }, function onIterExhaustion(err) {
+    if (err) abortJourney(err);
+    console.log('Fin.');
   });
 }
 
