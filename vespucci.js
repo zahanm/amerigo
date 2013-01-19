@@ -7,6 +7,9 @@ var fs = require('fs')
   , mkdirpSync = require('mkdirp').sync
   , spawn = require('child_process').spawn;
 
+var USAGE = 'rsync wrapper to keep remote and local directories in sync.\n' +
+  'Usage: amerigo <up|down> <branchname>';
+
 var RSYNC = 'rsync';
 var CONFIG_FILE = 'journey.json';
 var SSH = 'ssh';
@@ -33,7 +36,7 @@ function branchCheck(config, cb) {
     remotebranch = remotebranch[0].slice(2);
     var localbranch = ARGV._[1];
     if (localbranch != remotebranch)
-      abortJourney('Branch mismatch => remote:' + remotebranch + ' != local:' + localbranch);
+      abortJourney('Branch mismatch => local:' + localbranch + ' != remote:' + remotebranch);
     cb(config);
   });
 }
@@ -112,11 +115,14 @@ function prepareVessel() {
 function abortJourney(err) {
   console.error('Aborted!');
   console.error(err);
+  console.error();
+  console.error(USAGE);
+  console.error();
   process.exit(1);
 }
 
 var ARGV = require('optimist')
-  .usage('rsync wrapper to keep remote and local directories in sync.\nUsage: amerigo <up|down> <branchname>')
+  .usage(USAGE)
   .options({
     'verbose': {
       alias: 'v',
