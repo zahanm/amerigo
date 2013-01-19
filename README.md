@@ -2,25 +2,31 @@
 What is does
 ---
 
-This baby uses rsync to keep a remote and local directory in sync.
+This baby is a convenient rsync wrapper to keep a remote and local directory in sync.
 
 actions - up | down
 check remote branch match
+
+Only supports `git` for now.
 
 Config file syntax
 ---
 
 `journey.json`
 
-    [
-      {
-        local: "bigben"
-        remote: "nyc.usa.na:statueofliberty"
-      },
-      ..
-    ]
+    {
+      "host": "<ssh remote host>",
+      "root": "<repo root dir>",
+      "expeditions": [
+        {
+          "remote": "<remote dir>",
+          "local": "<local dir>"
+        },
+        ..
+      ]
+    }
 
 Naming
 ---
 
-Paying 'omage to the uncelebrated explorer. rsync convenience wrapper util.
+Paying 'omage to the uncelebrated explorer.
