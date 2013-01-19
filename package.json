@@ -17,5 +17,8 @@
   "author": "Zahan Malkani <z@zahanm.com>",
   "license": "MIT",
   "readmeFilename": "README.md",
-  "gitHead": "ab8539487f717a9ad890687a2f2ff9eab71af230"
+  "gitHead": "ab8539487f717a9ad890687a2f2ff9eab71af230",
+  "dependencies": {
+    "optimist": "~0.3.5"
+  }
 }
