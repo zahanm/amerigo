@@ -5,8 +5,8 @@ What is does
 Don't want to develop remotely?
 This gem is a convenient rsync wrapper to keep remote and local directories in sync.
 
-actions - up | down
-check remote branch match
+- actions - `up` | `down`
+- check local and remote branch name match
 
 Only supports `git` for now.
 
