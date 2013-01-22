@@ -3,12 +3,20 @@ What is does
 ---
 
 Don't want to develop remotely?
-This baby is a convenient rsync wrapper to keep remote and local directories in sync.
+This gem is a convenient rsync wrapper to keep remote and local directories in sync.
 
 actions - up | down
 check remote branch match
 
 Only supports `git` for now.
+
+Installation
+---
+
+Needs [Node](http://nodejs.org) and npm
+
+    ~> npm install -g amerigo
+    ~> amerigo -h
 
 Config file syntax
 ---
