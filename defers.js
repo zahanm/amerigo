@@ -1,5 +1,8 @@
+
 // Using for cleaner asynchronous programming.
 // Taken from [lie-to-me/lib/defers.js](https://github.com/babelon/lie-to-me/)
+
+'use strict';
 
 function Promise () {
   this.continuations = [];
@@ -17,9 +20,9 @@ Promise.prototype.then = function(f, c) {
   return this;
 };
 
-Promise.prototype.instead = function(f) {
+Promise.prototype.instead = function(f, c) {
   if (typeof f !== 'function') { throw new TypeError("You must pass a function as the 'error' handler"); }
-  this.stalled = f;
+  this.stalled = f.bind(c || this);
   return this;
 };
 
@@ -39,6 +42,7 @@ Promise.prototype.resolve = function onResolve() {
   ret = next.apply(context, args);
   if (ret instanceof Promise) {
     ret.then(this.resolve, this);
+    ret.instead(this.abort, this);
   }
 };
 
