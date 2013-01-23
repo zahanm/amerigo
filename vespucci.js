@@ -46,6 +46,7 @@ function branchCheck(localbranch, config) {
 }
 
 function voyage(action, config) {
+  var promise = new Promise();
   async.forEachLimit(config.expeditions, 2, function iter(expedition, next) {
     var args = [ '--rsh=ssh', '--compress', '--recursive' ];
     if (ARGV.verbose) args.push('--verbose');
@@ -86,9 +87,11 @@ function voyage(action, config) {
       }
     });
   }, function onIterExhaustion(err) {
-    if (err) abortJourney(err);
+    if (err) return promise.abort(err);
     console.log('Fin.');
+    return promise.resolve();
   });
+  return promise;
 }
 
 function oneWayTrip(direction, localbranch, config) {
