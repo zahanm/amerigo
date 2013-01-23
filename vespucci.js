@@ -5,7 +5,8 @@ var fs = require('fs')
   , path = require('path')
   , async = require('async')
   , mkdirpSync = require('mkdirp').sync
-  , spawn = require('child_process').spawn;
+  , spawn = require('child_process').spawn
+  , Promise = require('./defers').Promise;
 
 var USAGE = 'rsync wrapper to keep remote and local directories in sync.\n' +
   'Usage: amerigo <up|down> <branchname>';
@@ -15,7 +16,8 @@ var CONFIG_FILE = 'journey.json';
 var SSH = 'ssh';
 var GITB = 'git branch'
 
-function branchCheck(config, cb) {
+function branchCheck(localbranch, config) {
+  var promise = new Promise();
   var check = "cd " + config.root + " && " + GITB;
   var args = [ config.host, check ];
   var ssh = spawn(SSH, args);
@@ -27,22 +29,23 @@ function branchCheck(config, cb) {
     output += String(data);
   });
   ssh.on('exit', function onExit(code) {
-    if (code !== 0) abortJourney("Try ssh'ing into " + config.host);
+    if (code !== 0)
+      return promise.abort("Try ssh'ing into " + config.host);
     var remotebranch = output.split('\n').filter(function(line) {
       return !!/^\*/.exec(line);
     });
     if (remotebranch.length !== 1)
-      abortJourney('Check your git dir on ' + config.host + ':' + config.root);
+      return promise.abort('Check your git dir on ' + config.host + ':' + config.root);
     remotebranch = remotebranch[0].slice(2);
     var localbranch = ARGV._[1];
     if (localbranch != remotebranch)
-      abortJourney('Branch mismatch => local:' + localbranch + ' != remote:' + remotebranch);
-    cb(config);
+      return promise.abort('Branch mismatch => local:' + localbranch + ' != remote:' + remotebranch);
+    return promise.resolve(config);
   });
+  return promise;
 }
 
-function voyage(config) {
-  var downloading = ARGV._[0] == 'down';
+function voyage(action, config) {
   async.forEachLimit(config.expeditions, 2, function iter(expedition, next) {
     var args = [ '--rsh=ssh', '--compress', '--recursive' ];
     if (ARGV.verbose) args.push('--verbose');
@@ -55,7 +58,7 @@ function voyage(config) {
     }
     var from = null
       , to = null;
-    if (downloading) {
+    if (action == 'down') {
       from = config.host + ':' + remotepath;
       to = localpath;
     } else {
@@ -88,7 +91,13 @@ function voyage(config) {
   });
 }
 
-function prepareVessel() {
+function oneWayTrip(direction, localbranch, config) {
+  var checker = branchCheck(localbranch, config);
+  checker.then(voyage, this, direction);
+  checker.instead(abortJourney);
+}
+
+function checkVessel() {
   var checks = [
     ARGV._.length === 2,
     ARGV._[0] == 'up' || ARGV._[0] == 'down',
@@ -108,7 +117,7 @@ function prepareVessel() {
     } catch (err) {
       abortJourney("JSON parsing error: " + CONFIG_FILE);
     }
-    branchCheck(config, voyage);
+    oneWayTrip(ARGV._[0], ARGV._[1], config);
   });
 }
 
@@ -138,7 +147,7 @@ var ARGV = require('optimist')
   .argv;
 
 if (require.main === module) {
-  prepareVessel();
+  checkVessel();
 } else {
   module.exports.run = prepareVessel;
 }
