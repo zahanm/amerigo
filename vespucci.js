@@ -100,10 +100,39 @@ function oneWayTrip(direction, localbranch, config) {
   checker.instead(abortJourney);
 }
 
+/*
+TODO watch directories for file changes
+This is notoriously hard to get right in Node.
+Abandoning for now.
+*/
+function returnJourneys(localbranch, config) {
+  // Initial download
+  var checker = branchCheck(localbranch, config);
+  checker.then(voyage, this, 'down');
+  checker.instead(abortJourney);
+  checker.then(function setupWatchers() {
+    var prevs = [];
+    config.expeditions.forEach(function(expedition, i) {
+      var watcher = fs.watch(expedition.local, function onChange() {
+        var info = fs.statSync(expedition.local);
+        console.log('Change detected.');
+        if (info.mtime.getTime() > prevs[i].mtime.getTime()) {
+          // upload the changes
+          var checker = branchCheck(localbranch, config);
+          checker.then(voyage, this, 'up');
+          checker.instead(abortJourney);
+          prevs[i] = info;
+        }
+      });
+      prevs.push(fs.statSync(expedition.local));
+    });
+  });
+}
+
 function checkVessel() {
   var checks = [
     ARGV._.length === 2,
-    ARGV._[0] == 'up' || ARGV._[0] == 'down',
+    ARGV._[0] == 'up' || ARGV._[0] == 'down', // || ARGV._[0] == 'sync',
     ARGV._[1] != ''
   ];
   var goodArgs = checks.reduce(function(passing, val) {
@@ -120,7 +149,10 @@ function checkVessel() {
     } catch (err) {
       abortJourney("JSON parsing error: " + CONFIG_FILE);
     }
-    oneWayTrip(ARGV._[0], ARGV._[1], config);
+    if (ARGV._[0] == 'sync')
+      returnJourneys(ARGV._[1], config);
+    else
+      oneWayTrip(ARGV._[0], ARGV._[1], config);
   });
 }
 
