@@ -184,5 +184,5 @@ var ARGV = require('optimist')
 if (require.main === module) {
   checkVessel();
 } else {
-  module.exports.run = prepareVessel;
+  module.exports.run = checkVessel;
 }
