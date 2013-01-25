@@ -6,6 +6,7 @@ var fs = require('fs')
   , async = require('async')
   , mkdirpSync = require('mkdirp').sync
   , spawn = require('child_process').spawn
+  , chokidar = require('chokidar')
   , Promise = require('./defers').Promise;
 
 var USAGE = 'rsync wrapper to keep remote and local directories in sync.\n' +
@@ -13,6 +14,7 @@ var USAGE = 'rsync wrapper to keep remote and local directories in sync.\n' +
 
 var RSYNC = 'rsync';
 var CONFIG_FILE = 'journey.json';
+var SYNC_DIR = '.';
 var SSH = 'ssh';
 var GITB = 'git branch'
 
@@ -70,7 +72,7 @@ function voyage(action, config) {
     if (/\/$/.exec(to)) to = to.slice(0, to.length - 1);
     args.push(from);
     args.push(to);
-    console.log(RSYNC + ' ' + args.join(' '));
+    if (ARGV.verbose) console.log(RSYNC + ' ' + args.join(' '));
     var rsync = spawn(RSYNC, args);
     var buf = '';
     rsync.stdout.on('data', function onOut(data) {
@@ -88,7 +90,7 @@ function voyage(action, config) {
     });
   }, function onIterExhaustion(err) {
     if (err) return promise.abort(err);
-    console.log('Fin.');
+    console.log(action, 'fin');
     return promise.resolve();
   });
   return promise;
@@ -106,33 +108,33 @@ This is notoriously hard to get right in Node.
 Abandoning for now.
 */
 function returnJourneys(localbranch, config) {
+  console.log('Use ^C to quit');
   // Initial download
   var checker = branchCheck(localbranch, config);
   checker.then(voyage, this, 'down');
   checker.instead(abortJourney);
   checker.then(function setupWatchers() {
-    var prevs = [];
-    config.expeditions.forEach(function(expedition, i) {
-      var watcher = fs.watch(expedition.local, function onChange() {
-        var info = fs.statSync(expedition.local);
-        console.log('Change detected.');
-        if (info.mtime.getTime() > prevs[i].mtime.getTime()) {
-          // upload the changes
-          var checker = branchCheck(localbranch, config);
-          checker.then(voyage, this, 'up');
-          checker.instead(abortJourney);
-          prevs[i] = info;
-        }
+    var watcher = chokidar.watch(SYNC_DIR, { ignored: /^(~|#)/, persistent: true });
+    watcher
+      .on('change', function onChange(path) {
+        console.log('change:', path);
+        // upload the changes
+        var checker = branchCheck(localbranch, config);
+        checker.then(voyage, this, 'up');
+        checker.instead(abortJourney);
+      })
+      .on('error', function onError(err) {
+        console.error('Error:', err);
+        watcher.close();
       });
-      prevs.push(fs.statSync(expedition.local));
-    });
+    console.log('Watching for changes..');
   });
 }
 
 function checkVessel() {
   var checks = [
     ARGV._.length === 2,
-    ARGV._[0] == 'up' || ARGV._[0] == 'down', // || ARGV._[0] == 'sync',
+    ARGV._[0] == 'up' || ARGV._[0] == 'down' || ARGV._[0] == 'sync',
     ARGV._[1] != ''
   ];
   var goodArgs = checks.reduce(function(passing, val) {
