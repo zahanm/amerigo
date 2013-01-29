@@ -50,7 +50,7 @@ function branchCheck(localbranch, config) {
 function voyage(action, config) {
   var promise = new Promise();
   async.forEachLimit(config.expeditions, 2, function iter(expedition, next) {
-    var args = [ '--rsh=ssh', '--compress', '--recursive' ];
+    var args = [ '--rsh=ssh', '--compress', '--recursive', '--delete', '--exclude=".DS_Store"' ];
     if (ARGV.verbose) args.push('--verbose');
     if (ARGV['dry-run']) args.push('--dry-run');
     var remotepath = path.join(config.root, expedition.remote);
