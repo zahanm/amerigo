@@ -102,11 +102,6 @@ function oneWayTrip(direction, localbranch, config) {
   checker.instead(abortJourney);
 }
 
-/*
-TODO watch directories for file changes
-This is notoriously hard to get right in Node.
-Abandoning for now.
-*/
 function returnJourneys(localbranch, config) {
   console.log('Use ^C to quit');
   // Initial download
