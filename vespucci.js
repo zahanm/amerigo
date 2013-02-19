@@ -113,6 +113,8 @@ function returnJourneys(localbranch, config) {
     watcher
       .on('change', function onChange(path) {
         console.log('change:', path);
+        if (/journey\.json$/.exec(path))
+          return watcher.close();
         // upload the changes
         var checker = branchCheck(localbranch, config);
         checker.then(voyage, this, 'up');

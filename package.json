@@ -1,6 +1,6 @@
 {
   "name": "amerigo",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "description": "rsync wrapper to keep remote and local directories in sync.",
   "main": "vespucci.js",
   "scripts": {
