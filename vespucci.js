@@ -7,6 +7,7 @@ var fs = require('fs')
   , mkdirpSync = require('mkdirp').sync
   , spawn = require('child_process').spawn
   , chokidar = require('chokidar')
+  , rmSync = require('remove').removeSync
   , Promise = require('./defers').Promise;
 
 var USAGE = 'rsync wrapper to keep remote and local directories in sync.\n' +
@@ -148,6 +149,14 @@ function checkVessel() {
     } catch (err) {
       abortJourney("JSON parsing error: " + CONFIG_FILE);
     }
+    if (ARGV.reset) {
+      var files = fs.readdirSync(SYNC_DIR);
+      var isConfig = new RegExp(CONFIG_FILE + '$');
+      console.log('Resetting directory:', SYNC_DIR);
+      files
+        .filter(function iter(f) { return !isConfig.exec(f); })
+        .forEach(function iter(f) { rmSync(f); });
+    }
     if (ARGV._[0] == 'sync')
       returnJourneys(ARGV._[1], config);
     else
@@ -159,7 +168,7 @@ function abortJourney(err) {
   console.error('Aborted!');
   console.error(err);
   console.error();
-  console.error(USAGE);
+  require('optimist').showHelp();
   console.error();
   process.exit(1);
 }
@@ -176,6 +185,11 @@ var ARGV = require('optimist')
       alias: 'n',
       type: 'boolean',
       desc: "Don't actually transfer anything"
+    },
+    'reset': {
+      alias: 'r',
+      type: 'boolean',
+      desc: 'resets the directory before downloading afresh'
     }
   })
   .argv;
