@@ -50,7 +50,7 @@ function branchCheck(localbranch, config) {
 
 function voyage(action, config) {
   var promise = new Promise();
-  async.forEachLimit(config.expeditions, 2, function iter(expedition, next) {
+  async.forEachLimit(config.expeditions, 5, function iter(expedition, next) {
     var args = [ '--rsh=ssh', '--compress', '--recursive', '--delete', '--exclude=".DS_Store"' ];
     if (ARGV.verbose) args.push('--verbose');
     if (ARGV['dry-run']) args.push('--dry-run');
@@ -58,9 +58,12 @@ function voyage(action, config) {
     var localpath = expedition.local;
     if (action === 'down') {
       var folderpath = localpath;
-      if (path.extname(folderpath).length > 0) {
-        // localpath is a filename (instead of a dirname)
-        folderpath = path.join(localpath.split(path.sep).slice(0, -1));
+      if (isPathToFile(folderpath)) {
+        // take out file from path
+        folderpath = path.join.apply(
+          path,
+          localpath.split(path.sep).slice(0, -1)
+        );
       }
       if (!fs.existsSync(folderpath)) {
         console.log('mkdir -p ' + folderpath);
@@ -76,6 +79,9 @@ function voyage(action, config) {
       from = localpath;
       to = config.host + ':' + remotepath;
     }
+    if (!isPathToFile(remotepath) && /\/$/.exec(from) == null)
+      from += '/';
+    if (/\/$/.exec(to)) to = to.slice(0, to.length - 1);
     args.push(from);
     args.push(to);
     if (ARGV.verbose) console.log(RSYNC + ' ' + args.join(' '));
@@ -167,6 +173,10 @@ function checkVessel() {
     else
       oneWayTrip(ARGV._[0], ARGV._[1], config);
   });
+}
+
+function isPathToFile(p) {
+  return path.extname(p).length > 0;
 }
 
 function abortJourney(err) {
