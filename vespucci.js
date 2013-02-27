@@ -56,21 +56,26 @@ function voyage(action, config) {
     if (ARGV['dry-run']) args.push('--dry-run');
     var remotepath = path.join(config.root, expedition.remote);
     var localpath = expedition.local;
-    if (!fs.existsSync(localpath)) {
-      console.log('mkdir -p ' + localpath);
-      mkdirpSync(localpath);
+    if (action === 'down') {
+      var folderpath = localpath;
+      if (path.extname(folderpath).length > 0) {
+        // localpath is a filename (instead of a dirname)
+        folderpath = path.join(localpath.split(path.sep).slice(0, -1));
+      }
+      if (!fs.existsSync(folderpath)) {
+        console.log('mkdir -p ' + folderpath);
+        mkdirpSync(folderpath);
+      }
     }
     var from = null
       , to = null;
-    if (action == 'down') {
+    if (action === 'down') {
       from = config.host + ':' + remotepath;
       to = localpath;
     } else {
       from = localpath;
       to = config.host + ':' + remotepath;
     }
-    if (/\/$/.exec(from) == null) from += '/';
-    if (/\/$/.exec(to)) to = to.slice(0, to.length - 1);
     args.push(from);
     args.push(to);
     if (ARGV.verbose) console.log(RSYNC + ' ' + args.join(' '));
@@ -83,7 +88,7 @@ function voyage(action, config) {
       buf += String(data);
     })
     rsync.on('exit', function onExit(code) {
-      if (code !== 0) next('rsync errored out');
+      if (code !== 0) next('rsync errored out: ' + buf);
       else {
         if (ARGV.verbose) console.log(buf);
         next(null);
