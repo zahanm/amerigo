@@ -161,18 +161,30 @@ function checkVessel() {
       abortJourney("JSON parsing error: " + CONFIG_FILE);
     }
     if (ARGV.reset) {
-      var files = fs.readdirSync(SYNC_DIR);
-      var isConfig = new RegExp(CONFIG_FILE + '$');
-      console.log('Resetting directory:', SYNC_DIR);
-      files
-        .filter(function iter(f) { return !isConfig.exec(f); })
-        .forEach(function iter(f) { rmSync(f); });
+      resetSyncDir();
     }
     if (ARGV._[0] == 'sync')
       returnJourneys(ARGV._[1], config);
     else
       oneWayTrip(ARGV._[0], ARGV._[1], config);
   });
+}
+
+function resetSyncDir() {
+  var shouldIgnore = [
+    new RegExp('^' + CONFIG_FILE + '$'),
+    /^\.git/,
+    /^\.svn/
+  ];
+  var files = fs.readdirSync(SYNC_DIR);
+  console.log('Resetting directory:', SYNC_DIR);
+  files
+    .filter(function iter(f) {
+      return !shouldIgnore.reduce(function(matched, pat) {
+        return matched || pat.exec(f);
+      }, false);
+    })
+    .forEach(function iter(f) { rmSync(f); });
 }
 
 function isPathToFile(p) {
