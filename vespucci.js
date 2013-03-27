@@ -23,6 +23,7 @@ function branchCheck(localbranch, config) {
   var promise = new Promise();
   var check = "cd " + config.root + " && " + GITB;
   var args = [ config.host, check ];
+  if (ARGV.verbose) console.log(SSH + ' ' + args.join(' '));
   var ssh = spawn(SSH, args);
   var output = '';
   ssh.stdout.on('data', function onOut(data) {
