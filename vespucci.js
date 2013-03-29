@@ -162,7 +162,7 @@ function checkVessel() {
       abortJourney("JSON parsing error: " + CONFIG_FILE);
     }
     if (ARGV.reset) {
-      resetSyncDir();
+      resetSyncDir(config);
     }
     if (ARGV._[0] == 'sync')
       returnJourneys(ARGV._[1], config);
@@ -171,12 +171,17 @@ function checkVessel() {
   });
 }
 
-function resetSyncDir() {
+function resetSyncDir(config) {
   var shouldIgnore = [
     new RegExp('^' + CONFIG_FILE + '$'),
     /^\.git/,
     /^\.svn/
   ];
+  if (config.ignores) {
+    config.ignores.forEach(function(pat) {
+      shouldIgnore.push(new RegExp('^' + pat + '$'));
+    });
+  }
   var files = fs.readdirSync(SYNC_DIR);
   console.log('Resetting directory:', SYNC_DIR);
   files
