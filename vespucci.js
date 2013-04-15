@@ -11,13 +11,14 @@ var fs = require('fs')
   , Promise = require('./defers').Promise;
 
 var USAGE = 'rsync wrapper to keep remote and local directories in sync.\n' +
-  'Usage: amerigo <up|down> <branchname>';
+  'Usage: amerigo <up|down> <branchname>' +
+  'Usage: amerigo init <new folder name>';
 
 var RSYNC = 'rsync';
 var CONFIG_FILE = 'journey.json';
 var SYNC_DIR = '.';
 var SSH = 'ssh';
-var GITB = 'git branch'
+var GITB = 'git branch';
 
 function branchCheck(localbranch, config) {
   var promise = new Promise();
@@ -141,36 +142,6 @@ function returnJourneys(localbranch, config) {
   });
 }
 
-function checkVessel() {
-  var checks = [
-    ARGV._.length === 2,
-    ARGV._[0] == 'up' || ARGV._[0] == 'down' || ARGV._[0] == 'sync',
-    ARGV._[1] != ''
-  ];
-  var goodArgs = checks.reduce(function(passing, val) {
-    return passing && val;
-  }, true);
-  if (!goodArgs) abortJourney('Arguments incorrect');
-  if (!fs.existsSync(CONFIG_FILE) || !fs.statSync(CONFIG_FILE).isFile())
-    abortJourney(CONFIG_FILE + ' missing');
-  fs.readFile(CONFIG_FILE, function onRead(err, contents) {
-    if (err) abortJourney("File reading error: " + CONFIG_FILE);
-    var config = {};
-    try {
-      config = JSON.parse(contents);
-    } catch (err) {
-      abortJourney("JSON parsing error: " + CONFIG_FILE);
-    }
-    if (ARGV.reset) {
-      resetSyncDir(config);
-    }
-    if (ARGV._[0] == 'sync')
-      returnJourneys(ARGV._[1], config);
-    else
-      oneWayTrip(ARGV._[0], ARGV._[1], config);
-  });
-}
-
 function resetSyncDir(config) {
   var shouldIgnore = [
     new RegExp('^' + CONFIG_FILE + '$'),
@@ -195,6 +166,67 @@ function resetSyncDir(config) {
 
 function isPathToFile(p) {
   return path.extname(p).length > 0;
+}
+
+function initEmptyLaunchpad(padpath) {
+  if (isPathToFile(padpath)) {
+    abortJourney(
+      "'" +
+      padpath +
+      "' seems point to a file, cannot create empty launchpad folder"
+    );
+  }
+  if (fs.existsSync(padpath)) {
+    abortJourney(
+      "'" + padpath + "' already exists, cannot create empty launchpad"
+    );
+  }
+  console.log('mkdir -p ' + padpath);
+  mkdirpSync(padpath);
+  var emptyLaunchpad = path.join(path.dirname(__filename), 'launchpad.json');
+  fs.readFile(emptyLaunchpad, function(err, contents) {
+    if (err) abortJourney('Reading from ' + emptyLaunchpad + ' failed');
+    fs.writeFile(path.join(padpath, CONFIG_FILE), contents, function(err) {
+      if (err) {
+        abortJourney(
+          'Writing to ' + path.join(padpath, CONFIG_FILE) + ' failed'
+        );
+      }
+      console.log('Created empty launchpad at ' + padpath);
+    });
+  });
+}
+
+function checkVessel() {
+  var checks = [
+    ARGV._.length === 2,
+    ARGV._[0] == 'up' || ARGV._[0] == 'down' || ARGV._[0] == 'sync' ||
+      ARGV._[0] == 'init',
+    ARGV._[1] != ''
+  ];
+  var goodArgs = checks.reduce(function(passing, val) {
+    return passing && val;
+  }, true);
+  if (!goodArgs) abortJourney('Arguments incorrect');
+  if (ARGV._[0] == 'init') return initEmptyLaunchpad(ARGV._[1]);
+  if (!fs.existsSync(CONFIG_FILE) || !fs.statSync(CONFIG_FILE).isFile())
+    abortJourney(CONFIG_FILE + ' missing');
+  fs.readFile(CONFIG_FILE, function onRead(err, contents) {
+    if (err) abortJourney("File reading error: " + CONFIG_FILE);
+    var config = {};
+    try {
+      config = JSON.parse(contents);
+    } catch (err) {
+      abortJourney("JSON parsing error: " + CONFIG_FILE);
+    }
+    if (ARGV.reset) {
+      resetSyncDir(config);
+    }
+    if (ARGV._[0] == 'sync')
+      returnJourneys(ARGV._[1], config);
+    else
+      oneWayTrip(ARGV._[0], ARGV._[1], config);
+  });
 }
 
 function abortJourney(err) {
