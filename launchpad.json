@@ -2,12 +2,12 @@
   "host": "",
   "root": "",
   "expeditions": [
+  ],
+  "unused": [
     {
       "remote": "",
       "local": ""
     }
-  ],
-  "unused": [
   ],
   "ignores": [
   ]
