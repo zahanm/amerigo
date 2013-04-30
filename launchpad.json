@@ -8,5 +8,7 @@
     }
   ],
   "unused": [
+  ],
+  "ignores": [
   ]
 }
