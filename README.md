@@ -5,10 +5,17 @@ What is does
 Don't want to develop remotely?
 This gem is a convenient rsync wrapper to keep remote and local directories in sync.
 
-- actions - `up` | `down` | `sync`
+- actions - `up` | `down` | `sync` | `init`
 - check local and remote branch name match
 
 Only supports `git` for now.
+
+Use `init` to make a new directory with a fresh `journey.json`.
+
+The `sync` option first executes a `down`.
+It watches for changes on your local filesystem, triggering an `up` each time.
+
+Check `--help`.
 
 Installation
 ---
