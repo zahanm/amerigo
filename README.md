@@ -26,6 +26,7 @@ Config file syntax
     {
       "host": "<ssh remote host>",
       "root": "<repo root dir>",
+      "user": "<ssh remote username>",
       "expeditions": [
         {
           "remote": "<remote dir>",
@@ -40,6 +41,7 @@ Config file syntax
     }
 
 - `host` is the hostname of the server that you are accessing.
+- `user` is your username on the `host` server
 - `root` is directory that all `remote` filepaths will be accessed relative to.
     So if you have a folder `project` in your home directory, that should be
     `~/project`, and `remote: "foo"` will resolve to `~/project/foo` on the
