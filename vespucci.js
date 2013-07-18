@@ -23,11 +23,7 @@ var GITB = 'git branch';
 function branchCheck(localbranch, config) {
   var promise = new Promise();
   var check = "cd " + config.root + " && " + GITB;
-  var host = config.host;
-  if (config.user) {
-    host = config.user + "@" + host;
-  }
-  var args = [ host, check ];
+  var args = [ config.endpoint, check ];
   if (ARGV.verbose) console.log(SSH + ' ' + args.join(' '));
   var ssh = spawn(SSH, args);
   var output = '';
@@ -39,12 +35,12 @@ function branchCheck(localbranch, config) {
   });
   ssh.on('exit', function onExit(code) {
     if (code !== 0)
-      return promise.abort("Try ssh'ing into " + host);
+      return promise.abort("Try ssh'ing into " + config.endpoint);
     var remotebranch = output.split('\n').filter(function(line) {
       return !!/^\*/.exec(line);
     });
     if (remotebranch.length !== 1)
-      return promise.abort('Check your git dir on ' + host + ':' + config.root);
+      return promise.abort('Check your git dir on ' + config.endpoint + ':' + config.root);
     remotebranch = remotebranch[0].slice(2);
     var localbranch = ARGV._[1];
     if (localbranch != remotebranch)
@@ -79,11 +75,11 @@ function voyage(action, config) {
     var from = null
       , to = null;
     if (action === 'down') {
-      from = host + ':' + remotepath;
+      from = config.endpoint + ':' + remotepath;
       to = localpath;
     } else {
       from = localpath;
-      to = host + ':' + remotepath;
+      to = config.endpoint + ':' + remotepath;
     }
     if (!isPathToFile(remotepath) && /\/$/.exec(from) == null)
       from += '/';
@@ -226,6 +222,10 @@ function checkVessel() {
     if (ARGV.reset) {
       resetSyncDir(config);
     }
+    if (config.user)
+      config.endpoint = config.user + "@" + config.host;
+    else
+      config.endpoint = config.host;
     if (ARGV._[0] == 'sync')
       returnJourneys(ARGV._[1], config);
     else
