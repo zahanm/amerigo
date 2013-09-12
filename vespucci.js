@@ -18,11 +18,11 @@ var RSYNC = 'rsync';
 var CONFIG_FILE = 'journey.json';
 var SYNC_DIR = '.';
 var SSH = 'ssh';
-var GITB = 'git branch';
+var BRANCHCHECK = '[[ -d ./.git ]] && git branch; [[ -d ./.hg ]] && hg bookmark';
 
 function branchCheck(localbranch, config) {
   var promise = new Promise();
-  var check = "cd " + config.root + " && " + GITB;
+  var check = "cd " + config.root + " && " + BRANCHCHECK;
   var args = [ config.endpoint, check ];
   if (ARGV.verbose) console.log(SSH + ' ' + args.join(' '));
   var ssh = spawn(SSH, args);
@@ -36,12 +36,17 @@ function branchCheck(localbranch, config) {
   ssh.on('exit', function onExit(code) {
     if (code !== 0)
       return promise.abort("Try ssh'ing into " + config.endpoint);
-    var remotebranch = output.split('\n').filter(function(line) {
-      return !!/^\*/.exec(line);
-    });
-    if (remotebranch.length !== 1)
+    var remotebranch = null;
+    var lines = output.split('\n');
+    for (var ii = 0; ii < lines.length; ii++) {
+      var matches = /^\s*\*\s*([\w-]+)/.exec(lines[ii]);
+      if (matches !== null) {
+        remotebranch = matches[1];
+        break;
+      }
+    }
+    if (remotebranch === null)
       return promise.abort('Check your git dir on ' + config.endpoint + ':' + config.root);
-    remotebranch = remotebranch[0].slice(2);
     var localbranch = ARGV._[1];
     if (localbranch != remotebranch)
       return promise.abort('Branch mismatch => local:' + localbranch + ' != remote:' + remotebranch);
