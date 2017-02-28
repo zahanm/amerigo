@@ -40,7 +40,7 @@ Config file syntax
           "local": "<local dir>"
         },
         ..
-      ]
+      ],
       "ignores": [
         "<folder-or-filename>",
         ..
